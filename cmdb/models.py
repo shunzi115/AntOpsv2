@@ -11,6 +11,7 @@
 # NetworkDevice
 # idc
 #
+#
 
 
 from django.db import models
