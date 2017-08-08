@@ -70,14 +70,179 @@ class CPU(models.Model):
         return self.cpu_model
 
 
-class Nic(models.Model):
-    name = models.CharField(u'网卡名', max_length=26)
+
+from django.db import models
+
+
+from django.db import models
+from django.contrib.auth.models import (
+    BaseUserManager, AbstractBaseUser,Group,PermissionsMixin
+)
+import django
+
+class UserManager(BaseUserManager):
+    def create_user(self, email, name, password=None):
+        """
+        Creates and saves a User with the given email, date of
+        birth and password.
+        """
+        if not email:
+            raise ValueError('Users must have an email address')
+
+        user = self.model(
+            email=self.normalize_email(email),
+            name=name,
+            #token=token,
+            #department=department,
+            #tel=tel,
+            #memo=memo,
+
+        )
+
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, email, name ,password):
+        """
+        Creates and saves a superuser with the given email, date of
+        birth and password.
+        """
+        user = self.create_user(email,
+            password=password,
+            name=name,
+            #token=token,
+            #department=department,
+            #tel=tel,
+            #memo=memo,
+        )
+        user.is_admin = True
+        user.save(using=self._db)
+        return user
+
+
+#class UserProfile(AbstractBaseUser):
+class UserProfile(AbstractBaseUser,PermissionsMixin):
+    email = models.EmailField(
+        verbose_name='email address',
+        max_length=255,
+        unique=True,
+    )
+    is_active = models.BooleanField(default=True)
+    is_admin = models.BooleanField(default=False)
+
+    name = models.CharField(max_length=32)
+    token = models.CharField(u'token', max_length=128,default=None,blank=True,null=True)
+    department = models.CharField(u'部门', max_length=32,default=None,blank=True,null=True)
+    #business_unit = models.ManyToManyField(BusinessUnit)
+    tel = models.CharField(u'座机', max_length=32,default=None,blank=True,null=True)
+    mobile = models.CharField(u'手机', max_length=32,default=None,blank=True,null=True)
+
+    memo = models.TextField(u'备注', blank=True,null=True,default=None)
+    date_joined = models.DateTimeField(blank=True, auto_now_add=True)
+    #valid_begin = models.DateTimeField(blank=True, auto_now=True)
+    valid_begin_time = models.DateTimeField(default=django.utils.timezone.now)
+    valid_end_time = models.DateTimeField(blank=True,null=True)
+
+    #groups = models.ManyToManyField
 
 
 
+    USERNAME_FIELD = 'email'
+    #REQUIRED_FIELDS = ['name','token','department','tel','mobile','memo']
+    REQUIRED_FIELDS = ['name']
 
+    def get_full_name(self):
+        # The user is identified by their email address
+        return self.email
 
+    def get_short_name(self):
+        # The user is identified by their email address
+        return self.email
 
+    def __str__(self):              # __unicode__ on Python 2
+        return self.email
+
+    def has_perm(self, perm, obj=None):
+        "Does the user have a specific permission?"
+        # Simplest possible answer: Yes, always
+        return True
+    def has_perms(self, perm, obj=None):
+        "Does the user have a specific permission?"
+        # Simplest possible answer: Yes, always
+        return True
+    def has_module_perms(self, app_label):
+        "Does the user have permissions to view the app `app_label`?"
+        # Simplest possible answer: Yes, always
+        return True
+
+    @property
+    def is_staff(self):
+        "Is the user a member of staff?"
+        # Simplest possible answer: All admins are staff
+        return self.is_admin
+
+    class Meta:
+        verbose_name = u'用户信息'
+        verbose_name_plural = u"用户信息"
+    def __unicode__(self):
+        return self.name
+
+    objects = UserManager()
+
+class Asset(models.Model):
+
+    asset_type_choices = (
+        ('server', u'服务器'),
+        ('networkdevice', u'网络设备'),
+        ('storagedevice', u'存储设备'),
+        ('securitydevice', u'安全设备'),
+        ('idcdevice', u'机房设备'),
+        # ('switch', u'交换机'),
+        # ('router', u'路由器'),
+        # ('firewall', u'防火墙'),
+        # ('storage', u'存储设备'),
+        # ('NLB', u'NetScaler'),
+        # ('wireless', u'无线AP'),
+        ('software', u'软件资产'),
+        #('others', u'其它类'),
+    )
+    asset_type = models.CharField(choices=asset_type_choices,max_length=64, default='server')
+    name = models.CharField(max_length=64,unique=True)
+    sn = models.CharField(u'资产SN号',max_length=128, unique=True)
+    manufactory = models.ForeignKey('Manufactory',verbose_name=u'制造商',null=True, blank=True)
+    #model = models.ForeignKey('ProductModel', verbose_name=u'型号')
+    #model = models.CharField(u'型号',max_length=128,null=True, blank=True )
+
+    management_ip = models.GenericIPAddressField(u'管理IP',blank=True,null=True)
+
+    contract = models.ForeignKey('Contract', verbose_name=u'合同',null=True, blank=True)
+    trade_date = models.DateField(u'购买时间',null=True, blank=True)
+    expire_date = models.DateField(u'过保修期',null=True, blank=True)
+    price = models.FloatField(u'价格',null=True, blank=True)
+    business_unit = models.ForeignKey('BusinessUnit', verbose_name=u'所属业务线',null=True, blank=True)
+    tags = models.ManyToManyField('Tag' ,blank=True)
+    admin = models.ForeignKey('UserProfile', verbose_name=u'资产管理员',null=True, blank=True)
+    idc = models.ForeignKey('IDC', verbose_name=u'IDC机房',null=True, blank=True)
+
+    status_choices = ((0,'在线'),
+                      (1,'已下线'),
+                      (2,'未知'),
+                      (3,'故障'),
+                      (4,'备用'),
+                      )
+    status = models.SmallIntegerField(choices=status_choices,default=0)
+    #status = models.ForeignKey('Status', verbose_name = u'设备状态',default=1)
+    #Configuration = models.OneToOneField('Configuration',verbose_name='配置管理',blank=True,null=True)
+
+    memo = models.TextField(u'备注', null=True, blank=True)
+    create_date = models.DateTimeField(blank=True, auto_now_add=True)
+    update_date = models.DateTimeField(blank=True, auto_now=True)
+    class Meta:
+        verbose_name = '资产总表'
+        verbose_name_plural = "资产总表"
+    def __str__(self):
+        return '<id:%s name:%s>'  %(self.id,self.name )
 
 
 class Server(models.Model):
@@ -93,7 +258,7 @@ class Server(models.Model):
     )
     sub_asset_type = models.SmallIntegerField(choices=sub_assset_type_choices,verbose_name="服务器类型",default=0)
     created_by = models.CharField(choices=created_by_choices,max_length=32,default='auto') #auto: auto created,   manual:created manually
-    hosted_on = models.ForeignKey('self',related_name='hosted_on_server',blank=True,null=True) #for vitural server
+    #hosted_on = models.ForeignKey('self',related_name='hosted_on_server',blank=True,null=True) #for vitural server
     #sn = models.CharField(u'SN号',max_length=128)
     #management_ip = models.CharField(u'管理IP',max_length=64,blank=True,null=True)
     #manufactory = models.ForeignKey(verbose_name=u'制造商',max_length=128,null=True, blank=True)
@@ -121,6 +286,18 @@ class Server(models.Model):
     def __str__(self):
         return '%s sn:%s' %(self.asset.name,self.asset.sn)
 
+class SecurityDevice(models.Model):
+    asset = models.OneToOneField('Asset')
+    sub_assset_type_choices = (
+        (0,'防火墙'),
+        (1,'入侵检测设备'),
+        (2,'互联网网关'),
+        (4,'运维审计系统'),
+    )
+    sub_asset_type = models.SmallIntegerField(choices=sub_assset_type_choices,verbose_name="服务器类型",default=0)
+
+    def __str__(self):
+        return self.asset.id
 
 class NetworkDevice(models.Model):
     asset = models.OneToOneField('Asset')
@@ -145,6 +322,50 @@ class NetworkDevice(models.Model):
         verbose_name = '网络设备'
         verbose_name_plural = "网络设备"
 
+class Software(models.Model):
+    '''
+    only save software which company purchased
+    '''
+    sub_assset_type_choices = (
+        (0, 'OS'),
+        (1, '办公\开发软件'),
+        (2, '业务软件'),
+
+    )
+    sub_asset_type = models.SmallIntegerField(choices=sub_assset_type_choices,verbose_name="服务器类型",default=0)
+    license_num = models.IntegerField(verbose_name="授权数")
+    # os_distribution_choices = (('windows','Windows'),
+    #                            ('centos','CentOS'),
+    #                            ('ubuntu', 'Ubuntu'))
+    # type = models.CharField(u'系统类型', choices=os_types_choice, max_length=64,help_text=u'eg. GNU/Linux',default=1)
+    # distribution = models.CharField(u'发型版本', choices=os_distribution_choices,max_length=32,default='windows')
+    version = models.CharField(u'软件/系统版本', max_length=64, help_text=u'eg. CentOS release 6.5 (Final)', unique=True)
+    # language_choices = (('cn',u'中文'),
+    #                     ('en',u'英文'))
+    # language = models.CharField(u'系统语言',choices = language_choices, default='cn',max_length=32)
+    # #version = models.CharField(u'版本号', max_length=64,help_text=u'2.6.32-431.3.1.el6.x86_64' )
+
+    def __str__(self):
+        return self.version
+    class Meta:
+        verbose_name = '软件/系统'
+        verbose_name_plural = "软件/系统"
+
+
+class CPU(models.Model):
+
+    asset = models.OneToOneField('Asset')
+    cpu_model = models.CharField(u'CPU型号', max_length=128,blank=True)
+    cpu_count = models.SmallIntegerField(u'物理cpu个数')
+    cpu_core_count = models.SmallIntegerField(u'cpu核数')
+    memo = models.TextField(u'备注', null=True,blank=True)
+    create_date = models.DateTimeField(auto_now_add=True)
+    update_date = models.DateTimeField(blank=True,null=True)
+    class Meta:
+        verbose_name = 'CPU部件'
+        verbose_name_plural = "CPU部件"
+    def __str__(self):
+        return self.cpu_model
 
 class RAM(models.Model):
     asset = models.ForeignKey('Asset')
@@ -240,7 +461,7 @@ class Manufactory(models.Model):
 
 class BusinessUnit(models.Model):
     parent_unit = models.ForeignKey('self',related_name='parent_level',blank=True,null=True)
-    name = models.CharField(u'业务线',max_length=64, unique=True)
+    name = models.CharField(u'业务线',max_length=64)
 
     #contact = models.ForeignKey('UserProfile',default=None)
     memo = models.CharField(u'备注',max_length=64, blank=True)
@@ -249,6 +470,35 @@ class BusinessUnit(models.Model):
     class Meta:
         verbose_name = '业务线'
         verbose_name_plural = "业务线"
+        unique_together = ("parent_unit","name")
+
+
+class Contract(models.Model):
+    sn = models.CharField(u'合同号', max_length=128,unique=True)
+    name = models.CharField(u'合同名称', max_length=64 )
+    memo = models.TextField(u'备注', blank=True,null=True)
+    price = models.IntegerField(u'合同金额')
+    detail = models.TextField(u'合同详细',blank=True,null=True)
+    start_date = models.DateField(blank=True)
+    end_date = models.DateField(blank=True)
+    license_num = models.IntegerField(u'license数量',blank=True)
+    create_date = models.DateField(auto_now_add=True)
+    update_date= models.DateField(auto_now=True)
+    class Meta:
+        verbose_name = '合同'
+        verbose_name_plural = "合同"
+    def __str__(self):
+        return self.name
+
+class IDC(models.Model):
+    name = models.CharField(u'机房名称',max_length=64,unique=True)
+    memo = models.CharField(u'备注',max_length=128,blank=True,null=True)
+    def __str__(self):
+        return self.name
+    class Meta:
+        verbose_name = '机房'
+        verbose_name_plural = "机房"
+
 
 class Tag(models.Model):
     name = models.CharField('Tag name',max_length=32,unique=True )
@@ -256,5 +506,81 @@ class Tag(models.Model):
     create_date = models.DateField(auto_now_add=True)
     def __str__(self):
         return self.name
+
+class EventLog(models.Model):
+    name = models.CharField(u'事件名称', max_length=100)
+    event_type_choices = (
+        (1,u'硬件变更'),
+        (2,u'新增配件'),
+        (3,u'设备下线'),
+        (4,u'设备上线'),
+        (5,u'定期维护'),
+        (6,u'业务上线\更新\变更'),
+        (7,u'其它'),
+    )
+    event_type = models.SmallIntegerField(u'事件类型', choices= event_type_choices)
+    asset = models.ForeignKey('Asset')
+    component = models.CharField('事件子项',max_length=255, blank=True,null=True)
+    detail = models.TextField(u'事件详情')
+    date = models.DateTimeField(u'事件时间',auto_now_add=True)
+    user = models.ForeignKey('UserProfile',verbose_name=u'事件源')
+    memo = models.TextField(u'备注', blank=True,null=True)
+
+    def __str__(self):
+        return self.name
+    class Meta:
+        verbose_name = '事件纪录'
+        verbose_name_plural = "事件纪录"
+
+
+    def colored_event_type(self):
+        if self.event_type == 1:
+            cell_html = '<span style="background: orange;">%s</span>'
+        elif self.event_type == 2 :
+            cell_html = '<span style="background: yellowgreen;">%s</span>'
+        else:
+            cell_html = '<span >%s</span>'
+        return cell_html % self.get_event_type_display()
+    colored_event_type.allow_tags = True
+    colored_event_type.short_description = u'事件类型'
+
+
+class NewAssetApprovalZone(models.Model):
+    sn = models.CharField(u'资产SN号',max_length=128, unique=True)
+    asset_type_choices = (
+        ('server', u'服务器'),
+        ('switch', u'交换机'),
+        ('router', u'路由器'),
+        ('firewall', u'防火墙'),
+        ('storage', u'存储设备'),
+        ('NLB', u'NetScaler'),
+        ('wireless', u'无线AP'),
+        ('software', u'软件资产'),
+        ('others', u'其它类'),
+    )
+    asset_type = models.CharField(choices=asset_type_choices,max_length=64,blank=True,null=True)
+    manufactory = models.CharField(max_length=64,blank=True,null=True)
+    model = models.CharField(max_length=128,blank=True,null=True)
+    ram_size = models.IntegerField(blank=True,null=True)
+    cpu_model = models.CharField(max_length=128,blank=True,null=True)
+    cpu_count = models.IntegerField(blank=True,null=True)
+    cpu_core_count = models.IntegerField(blank=True,null=True)
+    os_distribution =  models.CharField(max_length=64,blank=True,null=True)
+    os_type =  models.CharField(max_length=64,blank=True,null=True)
+    os_release =  models.CharField(max_length=64,blank=True,null=True)
+    data = models.TextField(u'资产数据')
+    date = models.DateTimeField(u'汇报日期',auto_now_add=True)
+    approved = models.BooleanField(u'已批准',default=False)
+    approved_by = models.ForeignKey('UserProfile',verbose_name=u'批准人',blank=True,null=True)
+    approved_date = models.DateTimeField(u'批准日期',blank=True,null=True)
+
+    def __str__(self):
+        return self.sn
+    class Meta:
+        verbose_name = '新上线待批准资产'
+        verbose_name_plural = "新上线待批准资产"
+
+
+
 
 
