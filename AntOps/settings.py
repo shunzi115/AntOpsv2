@@ -75,12 +75,19 @@ WSGI_APPLICATION = 'AntOps.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/1.11/ref/settings/#databases
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-#     }
-# }
+from conf import dbConf
+db_conf = dbConf.db_base
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'HOST': db_conf["DB_HOST"],
+        'PORT': db_conf["DB_PORT"],
+        'NAME': db_conf["DB_NAME"],
+        'USER': db_conf["DB_USER"],
+        'PASSWORD': db_conf["DB_PWD"],
+    }
+}
 
 
 # Password validation
