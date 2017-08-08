@@ -5,7 +5,6 @@
 from django.db import models
 
 class Asset(models.Model):
-
     asset_type_choices = (
         ('server', u'服务器'),
         ('networkdevice', u'网络设备'),
