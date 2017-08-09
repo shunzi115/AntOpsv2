@@ -1,12 +1,35 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
 
-
 import os, sys, subprocess, socket
 import re
 
 def collect():
-    filter_keys = []
+    filter_keys = ['Manufacturer','Serial Number','Product Name','UUID','Wake-up Type']
+    raw_data = {}
+    for key  in filter_keys:
+        try:
+            result = subprocess.check_output("dmidecode -t system|grep '%s'" % key)
+            result = result.strip()
+            result_to_list = result.split(':')
+            if len(result_to_list) > 1:
+                raw_data[key] = result_to_list[1].strip()
+            else:
+                raw_data[key] = result_to_list[-1]
+            pass
+        except Exception as E:
+            print(E)
+            raw_data[key] = -2
+
+    data = {"asset_type": 'server'}
+    data['manufactory'] = raw_data['Manufacturer']
+    data['sn'] = raw_data['Serial Number']
+    data['model'] = raw_data['Product Name']
+    data['uuid'] = raw_data['UUID']
+    data['wake_up_type'] = raw_data['Wake-up Type']
+    data.update(cpuinfo())
+
+def cpuinfo():
 
 
 
@@ -15,7 +38,7 @@ def collect():
     raw_data = {}
     for key in filter_keys:
         try:
-            cmd_res = subprocess.getoutput(" dmidecode -t system|grep '%s'" %key)
+            cmd_res = subprocess.getoutput("dmidecode -t system|grep '%s'" %key)
             cmd_res = cmd_res.strip()
             res_to_list = cmd_res.split(':')
             if len(res_to_list)> 1:

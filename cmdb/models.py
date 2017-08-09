@@ -100,7 +100,7 @@ class RAM(models.Model):
     sn = models.CharField(u'SN号', max_length=128, null=True)
     model = models.CharField(u'内存型号', max_length=128)
     slot = models.CharField(u'内存插槽', max_length=64)
-    capacity = models.IntegerField(u'内存大小(GB)')
+    capacity = models.FloatField(u'内存大小(GB)')
     memo = models.TextField(u'备注', max_length=128, null=True)
     create_date = models.DateTimeField(auto_now_add=True)
     update_date = models.DateTimeField(null=True)
