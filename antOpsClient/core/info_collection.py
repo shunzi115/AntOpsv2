@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
 
+## this system only collect Linux  system info.
+## about Windows system info, next release will add it.
+
 import platform,sys, json
 from plugins import plugin_api
 
@@ -47,4 +50,9 @@ class InfoCollection(object):
         return sys_info
 
     def build_report_data(self, data):
+        '''
+        default deal collect data
+        :param data: get collect system info
+        :return: deal ok data
+        '''
         return data
