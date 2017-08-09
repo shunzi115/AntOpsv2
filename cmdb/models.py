@@ -15,6 +15,7 @@ class Asset(models.Model):
     asset_type = models.CharField(choices=asset_type_choices, max_length=64, default='server')
     sn = models.CharField(u'资产SN号', max_length=128, unique=True)
     manufactory = models.CharField(u'制厂商', max_length=64, null=True)
+    asset_group = models.ForeignKey('assetGroup',u'群集组')
     idc = models.ForeignKey('IDC', verbose_name=u'IDC机房', null=True)
     status_choices = (
         (0, '在线'),
@@ -28,6 +29,16 @@ class Asset(models.Model):
     create_date = models.DateTimeField(auto_now_add=True)
     update_date = models.DateTimeField(null=True)
 
+    def __str__(self):
+        return self.name
+
+class assetGroup(models.Model):
+    name = models.CharField(u'群集名称', max_length=64, unique=True)
+    mome = models.TextField(u'描述', null=True)
+
+    def __str__(self):
+        return self.name
+
 class IDC(models.Model):
     name = models.CharField(u'机房名称', max_length=32, unique=True)
     address = models.CharField(u'机房地址', max_length=128)
@@ -37,6 +48,9 @@ class IDC(models.Model):
     cabinet = models.CharField(u'机柜信息', max_length=64, null=True)
     ip_range = models.CharField(u'IP范围', max_length=64, null=True)
     bandwidth = models.CharField(u'接入带宽', max_length=24, null=True)
+
+    def __str__(self):
+        return self.name
 
 class Server(models.Model):
     asset = models.OneToOneField('Asset')
@@ -49,6 +63,9 @@ class Server(models.Model):
     model = models.CharField(u'型号', max_length=128, null=True)
     os_type = models.CharField(u'操作系统类型', max_length=64)
     os_release = models.CharField(u'操作系统版本', max_length=64)
+
+    def __str__(self):
+        return self.server_type
 
 class NetworkDevice(models.Model):
     asset = models.OneToOneField('Asset')
@@ -64,6 +81,9 @@ class NetworkDevice(models.Model):
     prot_num = models.SmallIntegerField(u'端口数', null=True)
     device_detail = models.TextField(u'设置详细配置', null=True)
 
+    def __str__(self):
+        return self.network_type
+
 class CPU(models.Model):
     asset = models.OneToOneField('Asset')
     cpu_model = models.CharField(u'CPU型号', max_length=128)
@@ -72,6 +92,9 @@ class CPU(models.Model):
     memo = models.TextField(u'备注', null=True)
     create_date = models.DateTimeField(auto_now_add=True)
     update_date = models.DateTimeField(null=True)
+
+    def __str__(self):
+        return self.cpu_core_count
 
 class RAM(models.Model):
     asset = models.ForeignKey('Asset')
@@ -83,8 +106,12 @@ class RAM(models.Model):
     create_date = models.DateTimeField(auto_now_add=True)
     update_date = models.DateTimeField(null=True)
 
+    def __str__(self):
+        return self.capacity
+
 class Disk(models.Model):
     asset = models.ForeignKey('Asset')
+    name = models.CharField(u'名称', max_length=32)
     sn = models.CharField(u'SN号', max_length=128, null=True)
     slot = models.CharField(u'插槽', max_length=64)
     model = models.CharField(u'硬盘型号', max_length=128, null=True)
@@ -100,6 +127,9 @@ class Disk(models.Model):
     create_date = models.DateTimeField(auto_now_add=True)
     update_date = models.DateTimeField(null=True)
 
+    def __str__(self):
+        return self.name
+
 class NIC(models.Model):
     asset = models.ForeignKey('Asset')
     name = models.CharField(u'网卡名', max_length=64)
@@ -113,6 +143,9 @@ class NIC(models.Model):
     create_date = models.DateTimeField(auto_now_add=True)
     update_date = models.DateTimeField(null=True)
 
+    def __str__(self):
+        return self.name
+
 class RaidAdaptor(models.Model):
     asset = models.ForeignKey('Asset')
     sn = models.CharField(u'SN号', max_length=128, null=True)
@@ -121,3 +154,6 @@ class RaidAdaptor(models.Model):
     memo = models.TextField(u'备注', unique=True)
     create_date = models.DateTimeField(auto_now_add=True)
     update_date = models.DateTimeField(null=True)
+
+    def __str__(self):
+        return self.sn
