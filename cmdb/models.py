@@ -8,7 +8,6 @@ class Asset(models.Model):
     asset_type_choices = (
         ('server', u'服务器'),
         ('networkdevice', u'网络设备'),
-
     )
     name = models.CharField(u'名称', max_length=64, unique=True)
     management_ip = models.GenericIPAddressField(u'管理IP')
