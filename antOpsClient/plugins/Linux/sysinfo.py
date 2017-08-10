@@ -29,6 +29,7 @@ def collect():
     data['wake_up_type'] = raw_data['Wake-up Type']
     data.update(cpuinfo())
     data.update(osinfo())
+    data.update(diskinfo())
 
 def cpuinfo():
     cpu_file = "/proc/cpuinfo"
@@ -62,15 +63,8 @@ def osinfo():
     }
     return data_dic
 
-def osinfo():
-    distributor = subprocess.getoutput(" lsb_release -a|grep 'Distributor ID'").split(":")
-    release  = subprocess.getoutput(" lsb_release -a|grep Description").split(":")
-    data_dic ={
-        "os_distribution": distributor[1].strip() if len(distributor)>1 else None,
-        "os_release":release[1].strip() if len(release)>1 else None,
-        "os_type": "linux",
-    }
-    return data_dic
+def diskinfo():
+    pass
 
 def diskinfo():
     obj = DiskPlugin()
