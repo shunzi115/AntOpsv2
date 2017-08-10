@@ -4,6 +4,15 @@
 import os, sys, subprocess, socket
 import re
 
+# import check python version model
+from detector import check_version
+
+python_version = check_version.check_python()
+if python_version == 3:
+    import subprocess
+elif python_version ==2:
+    import commands
+
 def collect():
     filter_keys = ['Manufacturer','Serial Number','Product Name','UUID','Wake-up Type']
     raw_data = {}
@@ -27,9 +36,19 @@ def collect():
     data['model'] = raw_data['Product Name']
     data['uuid'] = raw_data['UUID']
     data['wake_up_type'] = raw_data['Wake-up Type']
-    data.update(cpuinfo())
     data.update(osinfo())
+    data.update(cpuinfo())
+    data.update(raminfo())
+    data.update(nicinfo())
     data.update(diskinfo())
+
+def osinfo():
+    release = subprocess.check_output("lsb_release -d", shell=True).split(":")
+    data_dic = {
+        "os_release": release[1].strip() if len(release) > 1 else None,
+        "os_type": "linux",
+    }
+    return data_dic
 
 def cpuinfo():
     cpu_file = "/proc/cpuinfo"
@@ -55,13 +74,60 @@ def cpuinfo():
         data["cpu_model"] = -1
     return data
 
-def osinfo():
-    release = subprocess.check_output("lsb_release -d", shell=True).split(":")
-    data_dic = {
-        "os_release": release[1].strip() if len(release) > 1 else None,
-        "os_type": "linux",
-    }
-    return data_dic
+def raminfo():
+    raw_data = subprocess.check_output("dmidecode -t 17", shell=True)
+    raw_list = raw_data.split("\n")
+    raw_ram_list = []
+    item_list = []
+
+
+def raminfo():
+    raw_data = subprocess.getoutput("dmidecode -t 17")
+    raw_list = raw_data.split("\n")
+    raw_ram_list = []
+    item_list = []
+    for line in raw_list:
+        if line.startswith("Memory Device"):
+            raw_ram_list.append(item_list)
+            item_list =[]
+        else:
+            item_list.append(line.strip())
+    ram_list = []
+    for item in raw_ram_list:
+        item_ram_size = 0
+        ram_item_to_dic = {}
+        for i in item:
+            data = i.split(":")
+            if len(data) ==2:
+                key,v = data
+                if key == 'Size':
+                    if  v.strip() != "No Module Installed":
+                        ram_item_to_dic['capacity'] =  v.split()[0].strip() #e.g split "1024 MB"
+                        item_ram_size = int(v.split()[0])
+                    else:
+                        ram_item_to_dic['capacity'] =  0
+                if key == 'Type':
+                    ram_item_to_dic['model'] =  v.strip()
+                if key == 'Manufacturer':
+                    ram_item_to_dic['manufactory'] =  v.strip()
+                if key == 'Serial Number':
+                    ram_item_to_dic['sn'] =  v.strip()
+                if key == 'Asset Tag':
+                    ram_item_to_dic['asset_tag'] =  v.strip()
+                if key == 'Locator':
+                    ram_item_to_dic['slot'] =  v.strip()
+        if item_ram_size == 0:  # empty slot , need to report this
+            pass
+        else:
+            ram_list.append(ram_item_to_dic)
+    raw_total_size = subprocess.getoutput("cat /proc/meminfo|grep MemTotal ").split(":")
+    ram_data = {'ram':ram_list}
+    if len(raw_total_size) == 2:#correct
+        total_mb_size = int(raw_total_size[1].split()[0]) / 1024
+        ram_data['ram_size'] =  total_mb_size
+    return ram_data
+
+
 
 def diskinfo():
     pass
@@ -123,51 +189,7 @@ def nicinfo():
         nic_list.append(v)
     return {'nic':nic_list}
 
-def raminfo():
-    raw_data = subprocess.getoutput(" dmidecode -t 17")
-    raw_list = raw_data.split("\n")
-    raw_ram_list = []
-    item_list = []
-    for line in raw_list:
-        if line.startswith("Memory Device"):
-            raw_ram_list.append(item_list)
-            item_list =[]
-        else:
-            item_list.append(line.strip())
-    ram_list = []
-    for item in raw_ram_list:
-        item_ram_size = 0
-        ram_item_to_dic = {}
-        for i in item:
-            data = i.split(":")
-            if len(data) ==2:
-                key,v = data
-                if key == 'Size':
-                    if  v.strip() != "No Module Installed":
-                        ram_item_to_dic['capacity'] =  v.split()[0].strip() #e.g split "1024 MB"
-                        item_ram_size = int(v.split()[0])
-                    else:
-                        ram_item_to_dic['capacity'] =  0
-                if key == 'Type':
-                    ram_item_to_dic['model'] =  v.strip()
-                if key == 'Manufacturer':
-                    ram_item_to_dic['manufactory'] =  v.strip()
-                if key == 'Serial Number':
-                    ram_item_to_dic['sn'] =  v.strip()
-                if key == 'Asset Tag':
-                    ram_item_to_dic['asset_tag'] =  v.strip()
-                if key == 'Locator':
-                    ram_item_to_dic['slot'] =  v.strip()
-        if item_ram_size == 0:  # empty slot , need to report this
-            pass
-        else:
-            ram_list.append(ram_item_to_dic)
-    raw_total_size = subprocess.getoutput("cat /proc/meminfo|grep MemTotal ").split(":")
-    ram_data = {'ram':ram_list}
-    if len(raw_total_size) == 2:#correct
-        total_mb_size = int(raw_total_size[1].split()[0]) / 1024
-        ram_data['ram_size'] =  total_mb_size
-    return ram_data
+
 
 
 
