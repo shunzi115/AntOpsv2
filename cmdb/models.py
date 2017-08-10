@@ -86,7 +86,7 @@ class NetworkDevice(models.Model):
 class CPU(models.Model):
     asset = models.OneToOneField('Asset')
     cpu_model = models.CharField(u'CPU型号', max_length=128)
-    cpu_count = models.SmallIntegerField(u'物理CPU个数')
+    cpu_count = models.SmallIntegerField(u'逻辑CPU个数')
     cpu_core_count = models.SmallIntegerField(u'CPU核数')
     memo = models.TextField(u'备注', null=True)
     create_date = models.DateTimeField(auto_now_add=True)
