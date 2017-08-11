@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
 
-import os, sys, subprocess, socket
-import re
+import socket,re
 
 def collect_deal(getcmd):
     getcmd = __import__(getcmd)
@@ -28,13 +27,24 @@ def collect_deal(getcmd):
     data['model'] = raw_data['Product Name']
     data['uuid'] = raw_data['UUID']
     data['wake_up_type'] = raw_data['Wake-up Type']
+    data.update(hostnameinfo())
     data.update(osinfo(getcmd))
     data.update(cpuinfo(getcmd))
     data.update(raminfo(getcmd))
+    data.update(nicinfo(getcmd))
     data.update(diskinfo(getcmd))
 
+def hostnameinfo():
+    data = {}
+    hostname = socket.gethostname()
+    if hostname:
+        data["hostname"]  = hostname
+    else:
+        data["hostname"]  = None
+    return data
+
 def osinfo(getcmd):
-    release = subprocess.check_output("lsb_release -d", shell=True).split(":")
+    release = getcmd.check_output("lsb_release -d", shell=True).split(":")
     data_dic = {
         "os_release": release[1].strip() if len(release) > 1 else None,
         "os_type": "linux",
@@ -50,7 +60,7 @@ def cpuinfo(getcmd):
     }
     for k, cmd in raw_data:
         try:
-            result = subprocess.check_output(cmd, shell=True)
+            result = getcmd.check_output(cmd, shell=True)
             raw_data[k] = result.strip()
         except ValueError as E:
             print(E)
@@ -66,7 +76,7 @@ def cpuinfo(getcmd):
     return data
 
 def raminfo(getcmd):
-    raw_data = subprocess.check_output("dmidecode -t 17", shell=True)
+    raw_data = getcmd.check_output("dmidecode -t 17", shell=True)
     raw_list = raw_data.split("\n")
     raw_ram_list = []
     item_list = []
@@ -104,7 +114,7 @@ def raminfo(getcmd):
             pass
         else:
             ram_list.append(ram_item_to_dic)
-    raw_total_size = subprocess.getoutput("cat /proc/meminfo|grep MemTotal ").split(":")
+    raw_total_size = getcmd.getoutput("cat /proc/meminfo|grep MemTotal ").split(":")
     ram_data = {'ram':ram_list}
     if len(raw_total_size) == 2:#correct
         total_mb_size = int(raw_total_size[1].split()[0]) / 1024
@@ -112,7 +122,7 @@ def raminfo(getcmd):
     return ram_data
 
 def nicinfo(getcmd):
-    raw_data = subprocess.getoutput("ifconfig -a")
+    raw_data = getcmd.getoutput("ifconfig -a")
     raw_data= raw_data.split("\n")
     nic_dic = {}
     next_ip_line = False
@@ -169,59 +179,34 @@ def diskinfo(getcmd):
     return obj.linux()
 
 class DiskPlugin(object):
-    def __init__(self,getcmd):
-        self.getcmd = getcmd
+    def __init__(self):
+        pass
+    def humanize_bytes(self, bytesize, precision=0):
+        abbrevs = (
+            (10 ** 15, 'PB'),
+            (10 ** 12, 'TB'),
+            (10 ** 9, 'GB'),
+            (10 ** 6, 'MB'),
+            (10 ** 3, 'kB'),
+            (1, 'bytes')
+        )
+        if bytesize == 1:
+            return '1 byte'
+        for factor, suffix in abbrevs:
+            if bytesize >= factor:
+                break
+        return '%.*f%s' % (precision, round(float(bytesize) / factor), suffix)
 
     def linux(self):
-        result = {'physical_disk_driver':[]}
-        try:
-            script_path = os.path.dirname(os.path.abspath(__file__))
-            shell_command = " %s/MegaCli  -PDList -aALL" % script_path
-            output = self.getcmd.get(shell_command)
-            result['physical_disk_driver'] = self.parse(output[1])
-        except Exception as e:
-            result['error'] = e
+        with open('/proc/partitions', 'r') as dp:
+            result = {'physical_disk_driver': []}
+            for disk in dp:
+                one_res = {}
+                if re.search(r'[s,h,v]d[a-z]\n', disk):
+                    blknum = disk.strip().split(' ')[-2]
+                    dev = disk.strip().split(' ')[-1]
+                    size = int(blknum) * 1024
+                    consist = self.humanize_bytes(size).strip()
+                    one_res[dev] = consist
+                    result["physical_disk_driver"].append(one_res)
         return result
-
-    def parse(self,content):
-        '''
-        解析shell命令返回结果
-        :param content: shell 命令结果
-        :return:解析后的结果
-        '''
-        response = []
-        result = []
-        for row_line in content.split("\n\n\n\n"):
-            result.append(row_line)
-        for item in result:
-            temp_dict = {}
-            for row in item.split('\n'):
-                if not row.strip():
-                    continue
-                if len(row.split(':')) != 2:
-                    continue
-                key,value = row.split(':')
-                name =self.mega_patter_match(key);
-                if name:
-                    if key == 'Raw Size':
-                        raw_size = re.search('(\d+\.\d+)',value.strip())
-                        if raw_size:
-                            temp_dict[name] = raw_size.group()
-                        else:
-                            raw_size = '0'
-                    else:
-                        temp_dict[name] = value.strip()
-            if temp_dict:
-                response.append(temp_dict)
-        return response
-
-    def mega_patter_match(self,needle):
-        grep_pattern = {'Slot':'slot', 'Raw Size':'capacity', 'Inquiry':'model', 'PD Type':'iface_type'}
-        for key,value in grep_pattern.items():
-            if needle.startswith(key):
-                return value
-        return False
-
-
-
-
