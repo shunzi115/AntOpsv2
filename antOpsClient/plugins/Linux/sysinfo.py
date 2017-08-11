@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
 
+import sys
 # import check python version model
 from plugins.detector import check_version
 
@@ -15,4 +16,6 @@ def collect():
     elif pversion["pversion"] == 2:
         getcmd = __import__("subprocess")
         linux_info = deal_sysinfo.collect_deal(getcmd)
+    else:
+        sys.exit("System is not found python command...")
     return linux_info
