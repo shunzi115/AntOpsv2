@@ -3,6 +3,9 @@
 
 import socket,re
 
+# import check size type model
+from detector import check_size_type
+
 def collect_deal(getcmd):
     getcmd = __import__(getcmd)
     filter_keys = ['Manufacturer','Serial Number','Product Name','UUID','Wake-up Type']
@@ -32,7 +35,7 @@ def collect_deal(getcmd):
     data.update(cpuinfo(getcmd))
     data.update(raminfo(getcmd))
     data.update(nicinfo(getcmd))
-    data.update(diskinfo(getcmd))
+    data.update(diskinfo())
 
 def hostnameinfo():
     data = {}
@@ -116,8 +119,9 @@ def raminfo(getcmd):
             ram_list.append(ram_item_to_dic)
     raw_total_size = getcmd.getoutput("cat /proc/meminfo|grep MemTotal ").split(":")
     ram_data = {'ram':ram_list}
-    if len(raw_total_size) == 2:#correct
-        total_mb_size = int(raw_total_size[1].split()[0]) / 1024
+    if len(raw_total_size) == 2:
+        size = int(raw_total_size[1].split()[0]) * 1024
+        total_mb_size = check_size_type.humanize_bytes(size).strip()
         ram_data['ram_size'] =  total_mb_size
     return ram_data
 
@@ -174,28 +178,13 @@ def nicinfo(getcmd):
         nic_list.append(v)
     return {'nic':nic_list}
 
-def diskinfo(getcmd):
+def diskinfo():
     obj = DiskPlugin()
     return obj.linux()
 
 class DiskPlugin(object):
     def __init__(self):
         pass
-    def humanize_bytes(self, bytesize, precision=0):
-        abbrevs = (
-            (10 ** 15, 'PB'),
-            (10 ** 12, 'TB'),
-            (10 ** 9, 'GB'),
-            (10 ** 6, 'MB'),
-            (10 ** 3, 'kB'),
-            (1, 'bytes')
-        )
-        if bytesize == 1:
-            return '1 byte'
-        for factor, suffix in abbrevs:
-            if bytesize >= factor:
-                break
-        return '%.*f%s' % (precision, round(float(bytesize) / factor), suffix)
 
     def linux(self):
         with open('/proc/partitions', 'r') as dp:
@@ -206,7 +195,7 @@ class DiskPlugin(object):
                     blknum = disk.strip().split(' ')[-2]
                     dev = disk.strip().split(' ')[-1]
                     size = int(blknum) * 1024
-                    consist = self.humanize_bytes(size).strip()
+                    consist = check_size_type.humanize_bytes(size).strip()
                     one_res[dev] = consist
                     result["physical_disk_driver"].append(one_res)
         return result
