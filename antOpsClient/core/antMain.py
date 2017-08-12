@@ -34,7 +34,6 @@ class ArgvHandler(object):
         obj = info_collection.InfoCollection()
         asset_data = obj.collect()
 
-
     def __load_asset_id(self):
         '''
         deal local asset_id
