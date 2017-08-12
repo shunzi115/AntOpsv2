@@ -4,15 +4,14 @@
 import socket,re
 
 # import check size type model
-from detector import check_size_type
+from plugins.detector import check_size_type
 
 def collect_deal(getcmd):
-    getcmd = __import__(getcmd)
     filter_keys = ['Manufacturer','Serial Number','Product Name','UUID','Wake-up Type']
     raw_data = {}
     for key  in filter_keys:
         try:
-            result = getcmd.check_output("dmidecode -t system|grep '%s'" % key, shell=True)
+            result = getcmd.getoutput("dmidecode -t system|grep '%s'" % key)
             result = result.strip()
             result_to_list = result.split(':')
             if len(result_to_list) > 1:
@@ -20,8 +19,8 @@ def collect_deal(getcmd):
             else:
                 raw_data[key] = result_to_list[-1]
             pass
-        except Exception as E:
-            print(E)
+        except Exception:
+            print(Exception)
             raw_data[key] = -2
 
     data = {"asset_type": 'server'}
@@ -36,6 +35,7 @@ def collect_deal(getcmd):
     data.update(raminfo(getcmd))
     data.update(nicinfo(getcmd))
     data.update(diskinfo())
+    return data
 
 def hostnameinfo():
     data = {}
@@ -47,7 +47,7 @@ def hostnameinfo():
     return data
 
 def osinfo(getcmd):
-    release = getcmd.check_output("lsb_release -d", shell=True).split(":")
+    release = getcmd.getoutput("lsb_release -d").split(":")
     data_dic = {
         "os_release": release[1].strip() if len(release) > 1 else None,
         "os_type": "linux",
@@ -61,25 +61,25 @@ def cpuinfo(getcmd):
         "cpu_count": "grep 'processor' %s | wc -l" % cpu_file,   # 逻辑CPU个数
         "cpu_core_count": "grep 'core id' %s | sort | uniq | wc -l" % cpu_file, # CPU 核数
     }
-    for k, cmd in raw_data:
+    for k, cmd in raw_data.items():
         try:
-            result = getcmd.check_output(cmd, shell=True)
+            result = getcmd.getoutput(cmd)
             raw_data[k] = result.strip()
-        except ValueError as E:
-            print(E)
+        except ValueError:
+            print(ValueError)
     data = {
         "cpu_count": raw_data["cpu_count"],
         "cpu_core_count": raw_data["cpu_core_count"]
     }
     cpu_model = raw_data["cpu_model"].split(':')
-    if cpu_model > 1:
+    if len(cpu_model) > 1:
         data["cpu_model"] = cpu_model[1].strip()
     else:
         data["cpu_model"] = -1
     return data
 
 def raminfo(getcmd):
-    raw_data = getcmd.check_output("dmidecode -t 17", shell=True)
+    raw_data = getcmd.getoutput("dmidecode -t 17")
     raw_list = raw_data.split("\n")
     raw_ram_list = []
     item_list = []

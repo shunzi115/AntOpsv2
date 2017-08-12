@@ -33,6 +33,7 @@ class ArgvHandler(object):
     def collect(self):
         obj = info_collection.InfoCollection()
         asset_data = obj.collect()
+        print(asset_data)
 
     def __load_asset_id(self):
         '''

@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
 
-## this system only collect Linux  system info.
-## about Windows system info, next release will add it.
+## this system only collect linux  system info.
+## about windows system info, next release will add it.
 
 import platform,sys, json
 from plugins import plugin_api
@@ -30,20 +30,20 @@ class InfoCollection(object):
             info_data = func()
             format_data = self.build_report_data(info_data)
             return format_data
-        except Exception as E:
+        except Exception:
             sys.exit("Error: AntOps doens't support os [%s]" % os_platform)
 
-    def __Linux(self):
+    def Linux(self):
         '''
-        use Linux os deal api
+        use linux os deal api
         :return: result sysinfo
         '''
         sys_info = plugin_api.LinuxSysInfo()
         return sys_info
 
-    def __Windows(self):
+    def Windows(self):
         '''
-        use Windows os deal api
+        use windows os deal api
         :return: result sysinfo
         '''
         sys_info = plugin_api.WindowsSysInfo()

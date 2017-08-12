@@ -14,7 +14,7 @@ def collect():
         getcmd = __import__("subprocess")
         linux_info = deal_sysinfo.collect_deal(getcmd)
     elif pversion["pversion"] == 2:
-        getcmd = __import__("subprocess")
+        getcmd = __import__("commands")
         linux_info = deal_sysinfo.collect_deal(getcmd)
     else:
         sys.exit("System is not found python command...")

@@ -3,12 +3,11 @@
 
 def LinuxSysInfo():
     '''
-    call Linux  collect model
-    :return: Linux info data
+    call linux  collect model
+    :return: linux info data
     '''
-    from plugins.Linux import sysinfo
+    from plugins.linux import sysinfo
     return sysinfo.collect()
-
 
 def WindowsSysInfo():
     # from plugins.Window import sysinfo as win_sysinfo
