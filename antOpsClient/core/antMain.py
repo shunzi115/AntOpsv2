@@ -149,7 +149,7 @@ class ArgvHandler(object):
         f.write(str(asset_id))
         f.close()
 
-    def report_asset(self):
+    def report(self):
         obj = info_collection.InfoCollection()
         asset_data = obj.collect()
         asset_id = self.__load_asset_id() # load from asset_id file
