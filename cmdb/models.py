@@ -111,17 +111,17 @@ class RAM(models.Model):
 class Disk(models.Model):
     asset = models.ForeignKey('Asset')
     name = models.CharField(u'名称', max_length=32)
-    sn = models.CharField(u'SN号', max_length=128, null=True)
-    slot = models.CharField(u'插槽', max_length=64)
-    model = models.CharField(u'硬盘型号', max_length=128, null=True)
+    # sn = models.CharField(u'SN号', max_length=128, null=True)
+    # slot = models.CharField(u'插槽', max_length=64)
+    # model = models.CharField(u'硬盘型号', max_length=128, null=True)
     capacity = models.FloatField(u'磁盘容量')
-    disk_iface_choice = (
-        ('SATA', 'SATA'),
-        ('SAS', 'SAS'),
-        ('SCSI', 'SCSI'),
-        ('SSC', 'SSD'),
-    )
-    iface_type = models.CharField(u'接口类型', max_length=64, choices=disk_iface_choice, default='SAS')
+    # disk_iface_choice = (
+    #     ('SATA', 'SATA'),
+    #     ('SAS', 'SAS'),
+    #     ('SCSI', 'SCSI'),
+    #     ('SSC', 'SSD'),
+    # )
+    # iface_type = models.CharField(u'接口类型', max_length=64, choices=disk_iface_choice, default='SAS')
     memo = models.TextField(u'备注', null=True)
     create_date = models.DateTimeField(auto_now_add=True)
     update_date = models.DateTimeField(null=True)
