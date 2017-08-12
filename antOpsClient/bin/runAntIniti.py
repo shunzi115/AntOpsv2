@@ -8,4 +8,4 @@ sys.path.append(BASE_DIR)
 
 if __name__ == "__main__":
     from initialize import initialize_install
-    initialize_install_plugins.runCom()
+    initialize_install.runCom()
